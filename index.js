@@ -1,12 +1,5 @@
-function todos(state = [], action) {
-    if (action.type === 'ADD_TODO') {
-        return state.concat([action.todo]);
-    }
-
-    return state;
-}
-
-function createStore() {
+//Library cdoe
+function createStore(reducer) {
     // The store should have four parts
     // 1. The state
     // 2. Get the state
@@ -16,8 +9,10 @@ function createStore() {
     let state;
     let listeners = [];
 
+    //get the current state from the store
     const getState = () => state;
 
+    //provide a listener function the store will call when the state changes
     const subscribe = (listener) => {
         listeners.push(listener);
         return () => {
@@ -25,13 +20,115 @@ function createStore() {
         };
     };
 
+    // used to make changes to the store's state
+    const dispatch = (action) => {
+        state = reducer(state, action);
+        listeners.forEach((listener) => listener());
+    };
     return {
         getState,
         subscribe,
+        dispatch,
     };
 }
 
-const store = createStore();
+function app(state = {}, action) {
+    return {
+        todos: todos(state.todos, action),
+        goals: goals(state.goals, action),
+    };
+}
+
+const store = createStore(app);
+
 store.subscribe(() => {
     console.log('the new stats is: ', store.getState());
 });
+
+//App Code
+
+function addTodoAction(todo) {
+    return {
+        type: ADD_TODO,
+        todo,
+    };
+}
+
+function removeTodoAction(id) {
+    return {
+        type: REMOVE_TODO,
+        id,
+    };
+}
+
+function toggleTodoAction(id) {
+    return {
+        type: TOGGLE_TODO,
+        id,
+    };
+}
+
+function addGoalAction(goal) {
+    return {
+        type: ADD_GOAL,
+        goal,
+    };
+}
+
+function removeGoalAction(id) {
+    return {
+        type: REMOVE_GOAL,
+        id,
+    };
+}
+
+const ADD_TODO = 'ADD_TODO';
+const REMOVE_TODO = 'REMOVE_TODO';
+const TOGGLE_TODO = 'TOGGLE_TODO';
+const ADD_GOAL = 'ADD_GOAL';
+const REMOVE_GOAL = 'REMOVE_GOAL';
+
+//Reducer
+function todos(state = [], action) {
+    switch (action.type) {
+        case ADD_TODO:
+            return state.concat([action.todo]);
+        case REMOVE_TODO:
+            return state.filter((todo) => todo.id !== action.id);
+        case TOGGLE_TODO:
+            return state.map((todo) =>
+                todo.id !== action.id
+                    ? todo
+                    : Object.assign({}, todo, { complete: !todo.complete })
+            );
+        default:
+            return state;
+    }
+}
+
+function goals(state = [], action) {
+    switch (action.type) {
+        case ADD_GOAL:
+            return state.concat([action.goal]);
+        case REMOVE_GOAL:
+            return state.filter((goal) => goal.id !== action.id);
+        default:
+            return state;
+    }
+}
+
+store.dispatch(addTodoAction({ id: 0, name: 'Walk the dog', complete: false }));
+
+store.dispatch(addTodoAction({ id: 1, name: 'Wash the car', complete: false }));
+
+store.dispatch(addTodoAction({ id: 2, name: 'Go to the gym', complete: true }));
+
+store.dispatch(removeTodoAction({ id: 1 }));
+
+store.dispatch(toggleTodoAction({ id: 0 }));
+
+store.dispatch(addGoalAction({ id: 0, name: 'Learn Redux' }));
+
+store.dispatch(addGoalAction({ id: 0, name: 'Lose 20 pounds' }));
+
+store.dispatch(removeGoalAction({ id: 0 }));
